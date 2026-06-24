@@ -8,6 +8,13 @@ Agent Regression Sentinel MVP.
 > calibration to live in **Langfuse**. This day builds the deterministic gate.
 > LLM-as-judge is deliberately **not** here yet — gate first, judge second (D3).
 
+**Status:** gate logic built and **verified end-to-end against the fake supervisor**
+(healthy 8/8 green / exit 0; all 4 regressions red / exit 100 — see [Proof](#proof-this-is-the-demoable-artifact)).
+Location: `AI Formation/W05/D2/eval-ci-lab/`. This is the **sandbox** where the gate
+is proven; the production step is porting it into the real
+[`langgraph-lab`](https://github.com/Iloveiaverymuch/langgraph-lab) repo (see
+[Porting to langgraph-lab](#porting-to-langgraph-lab-makes-it-actually-block-prs)).
+
 ## What it checks (per frozen case)
 
 | # | Criterion | Source of truth | Catches |
@@ -75,13 +82,16 @@ the gate is targeted — no false positives.
 ## CI
 
 `.github/workflows/eval-gate.yml` runs the gate on every PR to `main`. promptfoo's
-non-zero exit fails the job; make it a **required status check** in branch protection
-to actually block merges.
+non-zero exit fails the job.
+
+> **A red ✗ does not block a merge on its own.** You must enable a **branch
+> protection rule** requiring the `eval-gate` status check (repo Settings → Branches).
+> Until that rule is on, the gate is advisory — it reports, it doesn't block.
 
 ## Files
 
 ```
-W05/D2/
+W05/D2/eval-ci-lab/
 ├── promptfooconfig.yaml          # the gate: providers, assertions, frozen cases
 ├── eval_harness/
 │   ├── provider.py               # promptfoo Python provider (real | fake)
@@ -89,8 +99,30 @@ W05/D2/
 │   └── fake_supervisor.py        # deterministic fixture + regression injection
 ├── .github/workflows/eval-gate.yml
 ├── requirements.txt
+├── proof_log.md                  # recorded green/red evidence
+├── Eval_CI_Gate_Cheatsheet.md    # 1-page reference (+ .pdf)
+├── .gitignore
 └── README.md
 ```
+
+## Porting to langgraph-lab (makes it actually block PRs)
+
+This lab proves the gate logic with a fake. Today, a PR in
+[`langgraph-lab`](https://github.com/Iloveiaverymuch/langgraph-lab) triggers nothing —
+**a GitHub Action only runs in the repo that contains its workflow file.** To make a
+faulty PR actually fail:
+
+1. **Copy this lab into the langgraph-lab repo** (e.g. an `evals/` dir): the
+   `eval_harness/`, `promptfooconfig.yaml`, and `.github/workflows/eval-gate.yml`.
+2. **Point the provider at the local supervisor** — same repo now, so drop the
+   cross-repo `W04_LAB_PATH` and import `supervisor` directly.
+3. **Run the real agent in CI** by setting `RUN_REAL_SUPERVISOR=1` + `OPENAI_API_KEY`
+   / `TAVILY_API_KEY` as repo secrets (or keep the fake for fast/free smoke runs and
+   run the real agent on a nightly schedule).
+4. **Turn on branch protection** requiring the `eval-gate` check — this is the step
+   that disables the merge button on red.
+
+Only after steps 1–4 does "open a faulty PR → blocked" become true.
 
 ## Next (D3)
 
