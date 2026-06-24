@@ -1,19 +1,18 @@
-# Agent Regression Sentinel — Deterministic CI Eval Gate (W05D2)
+# Agent Regression Sentinel — Deterministic CI Eval Gate
 
-A CI gate that **blocks a PR** when the W04 LangGraph supervisor regresses on its
+A CI gate that **blocks a PR** when the LangGraph supervisor agent regresses on its
 *trajectory* or *output* — not just its final answer. This is the spine of the
-Agent Regression Sentinel MVP.
+Agent Regression Sentinel.
 
-> Stack decision (W05D1): **Promptfoo** primary (CI-native, OSS, repo-resident config),
-> calibration to live in **Langfuse**. This day builds the deterministic gate.
-> LLM-as-judge is deliberately **not** here yet — gate first, judge second (D3).
+> Stack decision: **Promptfoo** primary (CI-native, OSS, repo-resident config),
+> calibration to live in **Langfuse**. This stage builds the deterministic gate.
+> LLM-as-judge is deliberately **not** here yet — gate first, judge second.
 
 **Status:** gate logic built and **verified end-to-end against the fake supervisor**
 (healthy 8/8 green / exit 0; all 4 regressions red / exit 100 — see [Proof](#proof-this-is-the-demoable-artifact)).
-Location: `AI Formation/W05/D2/eval-ci-lab/`. This is the **sandbox** where the gate
-is proven; the production step is porting it into the real
-[`langgraph-lab`](https://github.com/Iloveiaverymuch/langgraph-lab) repo (see
-[Porting to langgraph-lab](#porting-to-langgraph-lab-makes-it-actually-block-prs)).
+This is the **sandbox** where the gate is proven; the production step is porting it
+into the real [`langgraph-lab`](https://github.com/Iloveiaverymuch/langgraph-lab) repo
+(see [Porting to langgraph-lab](#porting-to-langgraph-lab-makes-it-actually-block-prs)).
 
 ## What it checks (per frozen case)
 
@@ -33,7 +32,7 @@ cases where output content matters.
 promptfooconfig.yaml ──► file://eval_harness/provider.py
                               │
                               ├─ RUN_REAL_SUPERVISOR=1 + OPENAI_API_KEY
-                              │     └─► imports W04/D2/langgraph-lab/supervisor (UNCHANGED)
+                              │     └─► imports the langgraph-lab supervisor (UNCHANGED)
                               │         runs compiled graph, captures tokens via callback
                               │
                               └─ otherwise (CI default)
@@ -45,8 +44,8 @@ provider returns:  output=<final report str>   context.metadata={worker_sequence
 ```
 
 Key design choices:
-- **Zero changes to W04 code** — the real supervisor is imported by path injection
-  (`W04_LAB_PATH`); tokens captured with a LangChain `UsageMetadataCallbackHandler`.
+- **Zero changes to the supervisor code** — the real supervisor is imported by path
+  injection (`W04_LAB_PATH`); tokens captured with a LangChain `UsageMetadataCallbackHandler`.
 - **CI-safe by default** — runs a deterministic fake supervisor so the gate's own
   logic is proven on every PR for **free**. Real runs are opt-in (nightly / secrets).
 - **Ordered-subsequence trajectory check**, not strict equality — a legitimate extra
@@ -91,7 +90,7 @@ non-zero exit fails the job.
 ## Files
 
 ```
-W05/D2/eval-ci-lab/
+eval-ci-lab/
 ├── promptfooconfig.yaml          # the gate: providers, assertions, frozen cases
 ├── eval_harness/
 │   ├── provider.py               # promptfoo Python provider (real | fake)
@@ -124,7 +123,7 @@ faulty PR actually fail:
 
 Only after steps 1–4 does "open a faulty PR → blocked" become true.
 
-## Next (D3)
+## Next
 
 Add one **Haiku LLM-as-judge** assertion (faithfulness / task-completion), scoped to
 merge-to-main, then **calibrate** it against human labels in Langfuse (Cohen's κ ≥ 0.7)
