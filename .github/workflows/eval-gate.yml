@@ -1,0 +1,63 @@
+# =============================================================================
+# Agent Regression Sentinel — CI eval gate (W05D2)
+# =============================================================================
+# Blocks a PR when the supervisor's trajectory/output regresses.
+# promptfoo exits non-zero when any assertion fails -> the job fails -> merge blocked
+# (enforce via a required status check / branch protection rule on `main`).
+#
+# Default mode = deterministic fake supervisor (no API keys, no spend) so the gate
+# runs on every PR for free. To run the REAL supervisor (e.g. nightly), set repo
+# secrets OPENAI_API_KEY + TAVILY_API_KEY and RUN_REAL_SUPERVISOR=1.
+# =============================================================================
+
+name: eval-gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}   # allow manual runs
+
+jobs:
+  agent-eval:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: W05/D2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python deps (provider harness)
+        run: pip install langchain-core
+
+      # Real supervisor deps only needed when RUN_REAL_SUPERVISOR=1.
+      - name: Install real supervisor deps (optional)
+        if: ${{ vars.RUN_REAL_SUPERVISOR == '1' }}
+        run: pip install -r ../../W04/D2/langgraph-lab/requirements.txt
+
+      - name: Run eval gate
+        env:
+          # Promote a PR to the real supervisor by setting these as repo vars/secrets.
+          RUN_REAL_SUPERVISOR: ${{ vars.RUN_REAL_SUPERVISOR || '0' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          # When running real, point the provider at the checked-out W04 lab:
+          W04_LAB_PATH: ${{ github.workspace }}/W04/D2/langgraph-lab
+        run: npx promptfoo@latest eval -c promptfooconfig.yaml --no-progress-bar
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promptfoo-eval-results
+          path: W05/D2/.promptfoo/output.json
+          if-no-files-found: ignore

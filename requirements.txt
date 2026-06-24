@@ -1,0 +1,4 @@
+# Provider harness only needs langchain-core (for message types + token callback).
+# The real W04 supervisor's own deps live in W04/D2/langgraph-lab/requirements.txt
+# and are only required when RUN_REAL_SUPERVISOR=1.
+langchain-core>=0.3.0

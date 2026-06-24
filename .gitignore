@@ -1,0 +1,41 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Python caching and environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+ENV/
+
+# Promptfoo cache, results and databases
+.promptfoo/
+promptfoo-results.json
+promptfoo-results.html
+
+# Local environment variables / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
